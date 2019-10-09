@@ -5,8 +5,8 @@ class NoiseGenerator{
             this.interp = interpolation;
         else
             this.interp = (a, b, c) => {
-                c = smoothStep(c);
-                return a-(a+b)*c;
+                c = smoothstep(c);
+                return a*(1-c)+b*c;
             }
         this.vectorGrid = this.createVectorGrid(dimensions);
     }
@@ -23,24 +23,32 @@ class NoiseGenerator{
     }
 
     noise(pos){
-        let posMin = pos.map((val, ind) => Math.floor(val)%dimensions[ind]);
-        let posMax = pos.map((val, ind) => Math.max(val)%dimensions[ind]);
-        let remainder = pos.map(val => pos%1);
-        let corners = posMin.map()
+        while(pos.length < this.dimensions.length)
+            pos.push(0);
+        pos = pos.map((val, ind) => val%=this.dimensions[ind]);
+        let corners = combineArrays(pos.map((val, ind) => Math.floor(val)%this.dimensions[ind]), pos.map((val, ind) => Math.ceil(val)%this.dimensions[ind]));
+        let distances = corners.map(corner => pos.map((val, ind) => val-corner[ind]));
+        let dotProducts = corners.map(corner => corner.reduce((vectors, ind) => {
+            return vectors = vectors[ind]
+        }, this.vectorGrid))
+        .map((vector, index) => dotProduct(vector, distances[index]));
+        let noise = dotProducts;
+        let length = this.dimensions.length-1;
+        while(noise.length > 1){
+            noise = noise.reduce((acc, _, ind, arr) => {
+                if(ind%2 == 0){
+                    return acc.concat(this.interp(arr[ind], arr[ind+1], distances[0][length]));
+                } else 
+                    return acc;
+            }, [])
+            length--;
+        }
+        return constrain(noise[0], -1, 1);
     }
 }
 
 //vec1 and vec2 must be same length
 //returns every combination of vec1 and vec2 such that no value changes index
-// function combineArrays(vec1, vec2){
-//     let combinations = [[]];
-//     for(let i = 0; i < vec1.length; i++){
-//         combinations = combinations.flatMap(a => [a.concat(vec1[i]), a.concat(vec2[i])]);
-        
-//     }
-//     return combinations;
-// }
-
 function combineArrays(vec1, vec2){
     return Array(vec1.length)
         .fill(1)
@@ -57,8 +65,8 @@ function vectorFromAngle(angle){
 }
 
 function smoothstep(x){
-    x = constrain(x);
-    return x*x*(3+2*x);
+    x = constrain(x, 0, 1);
+    return x*x*(3-2*x);
 }
 
 function constrain(num, min, max){
@@ -66,7 +74,7 @@ function constrain(num, min, max){
 }
 
 function dotProduct(vec1, vec2){
-    return vec1.x*vec2.x+vec1.y*vec2.y;
+    return new Array(vec1.length).fill().map((_, ind) => vec1[ind]*vec2[ind]).reduce((acc, val) => acc + val, 0);
 }
 
 function map(num, oldMin, oldMax, min, max){
