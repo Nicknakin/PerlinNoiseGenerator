@@ -32,24 +32,24 @@ class NoiseGenerator{
 
 //vec1 and vec2 must be same length
 //returns every combination of vec1 and vec2 such that no value changes index
-/*function combineArrays(vec1, vec2){
-    let combinations = [[]];
-    for(let i = 0; i < vec1.length; i++){
-        combinations = combinations.flatMap(a => [a.concat(vec1[i]), a.concat(vec2[i])]);
+// function combineArrays(vec1, vec2){
+//     let combinations = [[]];
+//     for(let i = 0; i < vec1.length; i++){
+//         combinations = combinations.flatMap(a => [a.concat(vec1[i]), a.concat(vec2[i])]);
         
-    }
-    return combinations;
-}*/ 
+//     }
+//     return combinations;
+// }
 
-const combineArrays = (vec1, vec2) => {
+function combineArrays(vec1, vec2){
     return Array(vec1.length)
-        .fill()
-        .map((_, ind) => ind)
-        .reduce((acc, ind) => {
-            return acc.flatMap(combinations => {
-                return [combinations.concat(vec1[ind]), combinations.concat(vec2[ind])]
-            }), [[]] /*Default value for accumulator*/
-        });  
+        .fill(1)
+        .map((_, i) => i)
+        .reduce(
+            (acc, curr) =>
+                acc.flatMap(a => [a.concat(vec1[curr]), a.concat(vec2[curr])]),
+            [[]]
+        )
 }
 
 function vectorFromAngle(angle){
