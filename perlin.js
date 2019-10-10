@@ -16,19 +16,7 @@ class NoiseGenerator{
     }
 
     createVectorGrid(dimensions){
-        let length = dimensions.reduce((product, val) => product*val, 1);
-        let vectors = new Array(length).fill().map(() => this.normalizedVector(dimensions.length));
-        //Reverse the array of dimensions, because I want to deal with last dimension first all the way back to the first dimension
-        return dimensions.reverse()
-        //For every dimension length chonk up my current array into new arrays of length dimension Length
-        .reduce((accumulator, dimensionLength) => {
-            //Iterate through the array and chonk as necessary, checking to see if I'm at a valid chonk index. Otherwise do nothing
-            return accumulator.reduce((chonks, _, currentIndex) => {
-                return (currentIndex % dimensionLength == 0)? chonks.concat([accumulator.slice(currentIndex, currentIndex+dimensionLength)]): chonks
-            }, [])
-        }, vectors)
-        .flat();
-        //Chonk complete.
+        return shapedArray(dimensions, this.normalizedVector, [this.dimensions.length]);
     }
 
     createVectorGrid2(dimensions){
@@ -140,4 +128,16 @@ function valAt(arr, indices){
 
 function mag(vec){
     return Math.sqrt(vec.map(val => val*val).reduce((acc, val) => acc+val, 0));
+}
+
+function shapedArray(dimensions, defaulter, args){
+    if(!(defaulter && typeof(defaulter) == "function"))
+        defaulter = () => 0;
+    let length = dimensions.reduce((product, val) => product*val, 1);
+    let vectors = new Array(length).fill().map(() => defaulter(...args));
+    //Reverse the array of dimensions, because I want to deal with last dimension first all the way back to the first dimension
+    return dimensions.slice(1)
+    .reverse()
+    .reduce((accumulator, dimensionLength) => accumulator.reduce((chonks, _, currentIndex) => (currentIndex % dimensionLength == 0)? chonks.concat([accumulator.slice(currentIndex, currentIndex+dimensionLength)]): chonks, []), vectors);
+    //Chonk complete.
 }
