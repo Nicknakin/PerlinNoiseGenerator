@@ -21,7 +21,8 @@ const adjustment = Math.PI*255/2;
     ctx.fillRect(0,0, canvas.width, canvas.height);
 
     noiseScale = [0.006, 0.006];
-    drawInterval = setInterval(draw, 1000/6);
+
+    draw();
 })();
 
 function draw(){
@@ -37,6 +38,16 @@ function draw(){
             rect(x, y, s, s);
         }
     }
+}
+
+function start(Hz){
+    stop();
+    hz = hz? hz : 1;
+    drawInterval = setInterval(draw, 1000/hz);
+}
+
+function stop(){
+    clearInterval(drawInterval);
 }
 
 function rect(x, y, w, h){

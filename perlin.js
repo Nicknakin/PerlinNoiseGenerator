@@ -12,10 +12,39 @@ class NoiseGenerator{
             }
 
         //Populate the vector grid to be used for dot products.
-        this.vectorGrid = this.createVectorGrid(dimensions);
+        this.vectorGrid = this.createVectorGrid(dimensions.slice(0));
     }
 
     createVectorGrid(dimensions){
+        let length = dimensions.reduce((product, val) => product*val, 1);
+        let vectors = new Array(length).fill().map(() => this.normalizedVector(dimensions.length));
+        //Reverse the array of dimensions, because I want to deal with last dimension first all the way back to the first dimension
+        return dimensions.reverse()
+        //For every dimension length chonk up my current array into new arrays of length dimension Length
+        .reduce((accumulator, dimensionLength) => {
+            //Iterate through the array and chonk as necessary, checking to see if I'm at a valid chonk index. Otherwise do nothing
+            return accumulator.reduce((chonks, _, currentIndex) => {
+                return (currentIndex % dimensionLength == 0)? chonks.concat([accumulator.slice(currentIndex, currentIndex+dimensionLength)]): chonks
+            }, [])
+        }, vectors)
+        .flat();
+        //Chonk complete.
+    }
+
+    createVectorGrid2(dimensions){
+        let length = dimensions.reduce((product, val) => product*val, 1);
+        let vectors = new Array(length).fill().map(() => this.normalizedVector(dimensions.length));
+        for(let i = dimensions.length-1; i >= 0; i--){
+            let temp = [];
+            while(vectors.length > 0){
+                temp.push(vectors.splice(0, dimensions[i]));
+            }
+            vectors = temp;
+        }
+        return vectors[0];
+    }
+
+    createVectorGrid3(dimensions){
         //Return either an array of random numbers or array of arrays (eventaully base casing on random numbers).
         return new Array(dimensions[0]).fill().map(() => (dimensions.length > 1)? this.createVectorGrid(dimensions.slice(1)): this.normalizedVector(this.dimensions.length));
     }
@@ -23,8 +52,8 @@ class NoiseGenerator{
     //Create a normalized vector of a specified length, a random vector is generated and normalized by dividing every value by the vector's magnitude.
     normalizedVector(length){
         let vec = new Array(length).fill().map(() => Math.random()*2-1);
-        const mag = Math.sqrt(vec.map(val => val*val).reduce((acc, val) => (acc)? acc + val: val));
-        vec = vec.map(val => (mag != 0)? val/=mag: val);
+        const magnitude = mag(vec);
+        vec = vec.map(val => (magnitude != 0)? val/=magnitude: val);
         return vec;
     }
 
@@ -41,9 +70,7 @@ class NoiseGenerator{
         //Generate the distances from the point to each of its corners (relative to the corner)
         let distances = corners.map(corner => pos.map((val, ind) => val-corner[ind]));
         //Turn every corner array (A list of coordinates) in to a vector (access this.vectorGrid at index corners[n])
-        let dotProducts = corners.map(corner => corner.reduce((vectors, ind) => {
-            return vectors = vectors[ind]
-        }, this.vectorGrid))
+        let dotProducts = corners.map(corner => valAt(this.vectorGrid, corner))
         //Generate a dot product between every corner's vector and the distance from that corner
         .map((vector, index) => dotProduct(vector, distances[index]));
         
@@ -105,4 +132,12 @@ function dotProduct(vec1, vec2){
 //Transform a number from one range to another range
 function map(num, oldMin, oldMax, min, max){
     return (num-oldMin)/(oldMax-oldMin)*(max-min)+min;
+}
+
+function valAt(arr, indices){
+    return eval(indices.reduce((acc, val) => acc+`[${val}]`, "arr"));
+}
+
+function mag(vec){
+    return Math.sqrt(vec.map(val => val*val).reduce((acc, val) => acc+val, 0));
 }
