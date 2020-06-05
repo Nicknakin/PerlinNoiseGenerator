@@ -6,35 +6,23 @@ class NoiseGenerator{
         if(interpolation && interpolation(0, 1, 0) == 0 && interpolation(0, 1, 1) == 1)
             this.interp = interpolation;
         else
-            this.interp = (a, b, c) => {
-                c = smoothstep2(c);
-                return a*(1-c)+b*c;
-            }
+            this.interp = smoothInterp;
 
         //Populate the vector grid to be used for dot products.
         this.vectorGrid = this.createVectorGrid(dimensions.slice(0));
     }
 
     createVectorGrid(dimensions){
-        return shapedArray(dimensions, this.normalizedVector, [this.dimensions.length]);
+        return shapedArray(dimensions, this.randomRadius, [this.dimensions.length]);
     }
 
-    createVectorGrid2(dimensions){
-        let length = dimensions.reduce((product, val) => product*val, 1);
-        let vectors = new Array(length).fill().map(() => this.normalizedVector(dimensions.length));
-        for(let i = dimensions.length-1; i >= 0; i--){
-            let temp = [];
-            while(vectors.length > 0){
-                temp.push(vectors.splice(0, dimensions[i]));
-            }
-            vectors = temp;
-        }
-        return vectors[0];
+    randomRadius(){
+        return Math.random()*Math.sqrt(2);
     }
 
-    createVectorGrid3(dimensions){
-        //Return either an array of random numbers or array of arrays (eventaully base casing on random numbers).
-        return new Array(dimensions[0]).fill().map(() => (dimensions.length > 1)? this.createVectorGrid(dimensions.slice(1)): this.normalizedVector(this.dimensions.length));
+    radiusComp(rad1, rad2){
+        let val = -Math.abs(rad1*rad1-rad2*rad2)
+        return 1/(1-val*rad1);
     }
 
     //Create a normalized vector of a specified length, a random vector is generated and normalized by dividing every value by the vector's magnitude.
@@ -60,7 +48,7 @@ class NoiseGenerator{
         //Turn every corner array (A list of coordinates) in to a vector (access this.vectorGrid at index corners[n])
         let dotProducts = corners.map(corner => valAt(this.vectorGrid, corner))
         //Generate a dot product between every corner's vector and the distance from that corner
-        .map((vector, index) => dotProduct(vector, distances[index]));
+        .map((vector, index) => this.radiusComp(vector, mag(distances[index])));
         
         //Prepare an array to be reduced 
         let noise = dotProducts;
@@ -77,8 +65,9 @@ class NoiseGenerator{
             }, [])
             length--;
         }
+
         //Return the final interpolation forced between -1 and 1.
-        return constrain(noise[0], -1, 1);
+        return constrain(noise[0], 0, 1);
     }
 }
 
@@ -94,6 +83,11 @@ function combineArrays(vec1, vec2){
                 acc.flatMap(a => [a.concat(vec1[curr]), a.concat(vec2[curr])]),
             [[]]
         )
+}
+
+function smoothInterp(a, b, c){
+        c = smoothstep2(c);
+        return a*(1-c)+b*c;
 }
 
 //Smoothstep that will always return beteween 0 and 1

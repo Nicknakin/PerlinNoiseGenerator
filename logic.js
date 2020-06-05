@@ -15,29 +15,30 @@ let time = 0;
 let drawInterval;
 const adjustment = Math.PI*255/2;
 
+let heights;
+
 (function init(){
-    NG = new NoiseGenerator([255, 255, 20]);
+    NG = new NoiseGenerator([255, 255]);
     ctx.fillStyle = "#000000";
     ctx.fillRect(0,0, canvas.width, canvas.height);
 
-    noiseScale = [0.006, 0.006];
+    noiseScale = [0.01, 0.01];
 
     draw();
 })();
 
 function draw(){
     time += 0.05;
-    const s = 5;
-    for(let y = 0; y < canvas.height; y+= s){
-        for(let x = 0; x < canvas.width; x+=s){
-            let color = Math.floor(constrain(map(new Array(octaves).fill(0).reduce((acc, _, index) => {
-                let val = NG.noise([x*noiseScale[0]*index+adjustment*index, y*noiseScale[1]*index+adjustment*index, time]);
-                return acc+val*Math.pow(0.55, index-1);
-            }, 0), -1, 1, 0, 255), 0, 255))
-            ctx.fillStyle = `rgb(${color}, ${color}, ${color})`;
-            rect(x, y, s, s);
-        }
-    }
+    let s = 1;
+    let temp = 0;
+    let imgData = ctx.createImageData(canvas.width/s, canvas.height/s);
+    let vals = new Uint8ClampedArray(canvas.width*canvas.height*4/s/s)
+    .map((_, index) => (index%4==0)?
+      temp = Math.floor(map(NG.noise([((index/4)%(canvas.width/s))*noiseScale[0], Math.floor(index/4/canvas.width/s)*noiseScale[1], time]), 0, 1, 0, 255)):
+      temp)
+    .map((val, index) => (index%4 == 3)? 255: val);
+    imgData.data.set(vals);
+    ctx.putImageData(imgData, 0, 0);
 }
 
 function start(Hz){
